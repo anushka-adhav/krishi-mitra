@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Krushi Mitra - Crop Recommendation</title>
+  <style>
+    body { font-family: Arial; max-width: 500px; margin: 40px auto; text-align: center; }
+    .preview-container { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 15px; }
+    .preview-container img { max-width: 100px; border-radius: 8px; }
+    button { padding: 10px 20px; margin-top: 15px; cursor: pointer; }
+    #result { margin-top: 20px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h2>🌱 Krushi Mitra</h2>
+  <p>मातीचे 1 ते 3 फोटो अपलोड करा</p>
+  <input type="file" id="imageInput" accept="image/*" capture="environment" multiple>
+  <br>
+  <div class="preview-container" id="previewContainer"></div>
+  <br>
+  <button onclick="predict()">Crop Recommend करा</button>
+  <div id="result"></div>
+
+  <script>
+    const input = document.getElementById("imageInput");
+    const previewContainer = document.getElementById("previewContainer");
+
+    input.addEventListener("change", () => {
+      previewContainer.innerHTML = "";
+      const files = Array.from(input.files).slice(0, 3);
+      files.forEach(file => {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        previewContainer.appendChild(img);
+      });
+      if (input.files.length > 3) {
+        alert("जास्तीत जास्त 3 फोटो निवडता येतील, फक्त पहिले 3 वापरले जातील");
+      }
+    });
+
+    async function predict() {
+      const files = Array.from(input.files).slice(0, 3);
+      if (files.length === 0) { alert("आधी फोटो निवडा"); return; }
+      const formData = new FormData();
+      files.forEach(file => formData.append("image", file));
+
+      document.getElementById("result").innerText = "Analyzing...";
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (data.error) {
+          document.getElementById("result").innerText = data.error;
+          return;
+        }
+        document.getElementById("result").innerHTML =
+          `<b>Soil:</b> ${data.soil_type}<br><b>Recommended Crops:</b> ${data.crops.join(", ")}<br><small>(${data.images_used} photo${data.images_used > 1 ? 's' : ''} used)</small>`;
+      } catch (err) {
+        document.getElementById("result").innerText = "Could not reach the backend. Start Flask with: python backend/app.py";
+      }
+    }
+  </script>
+</body>
+</html>
+
